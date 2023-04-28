@@ -4,14 +4,15 @@ import { Hobby } from "./domain/hobby.model";
 import { Address } from "./domain/address.model";
 import { User } from "./domain/user.model";
 
-
 describe("Decorators", () => {
   it("should register aggregate roots", () => {
     expect(true).toBe(true);
   });
   describe("AggregateRoot", () => {
     it("should register aggregate roots", () => {
-      expect(Reflect.getMetadata(AggregateRoot.META_KEY, User)).toBe(true);
+      expect(Reflect.getMetadata(AggregateRoot.META_KEY, User)).toStrictEqual({
+        vsn: 1,
+      });
 
       expect(Reflect.getMetadata(AggregateRoot.META_KEY, Address)).toBe(
         undefined,

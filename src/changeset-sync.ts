@@ -44,14 +44,14 @@ export type MsgFormatter<P extends Params<P>, K extends keyof P> = (
 export type Error =
   | { validator: "required"; message: string }
   | {
-  validator: "number";
-  message: string;
-  eq?: number;
-  gt?: number;
-  gte?: number;
-  lt?: number;
-  lte?: number;
-}
+      validator: "number";
+      message: string;
+      eq?: number;
+      gt?: number;
+      gte?: number;
+      lt?: number;
+      lte?: number;
+    }
   | { validator: "length"; message: string; min?: number; max?: number }
   | { validator: "format"; message: string }
   | { validator: "confirm"; message: string; otherField: string }
@@ -83,8 +83,8 @@ type CastEmbedNested<M, PI, PR> = (
 export type CastEmbedFn<M extends Model<M>, P, PKey> = PKey extends "."
   ? CastEmbedNested<M, P, P>
   : PKey extends keyof P
-    ? CastEmbedNested<M, P[PKey], P[PKey]>
-    : never;
+  ? CastEmbedNested<M, P[PKey], P[PKey]>
+  : never;
 
 export type CastOptions = {
   force?: boolean;
@@ -142,7 +142,12 @@ export class ChangesetSync<M extends Model<M>, P extends Params<P> = unknown> {
     permitted: (keyof P)[],
     opts?: CastOptions,
   ): ChangesetSync<M, P> {
-    const changeset = new ChangesetSync<M, P>(this._data, {}, this._errors, params);
+    const changeset = new ChangesetSync<M, P>(
+      this._data,
+      {},
+      this._errors,
+      params,
+    );
     const castOpts: CastOptions = {
       force: false,
       empty: [undefined],
@@ -190,7 +195,6 @@ export class ChangesetSync<M extends Model<M>, P extends Params<P> = unknown> {
     castFn: (instance: M[MKey]) => CastEmbedFn<M[MKey], P, PKey>,
     args: Args[],
   ): ChangesetSync<M, P> {
-
     let action: EmbedChangeAction = "update";
     let instance = this._data[fieldName];
     if (this._data[fieldName] === undefined) {
@@ -213,7 +217,6 @@ export class ChangesetSync<M extends Model<M>, P extends Params<P> = unknown> {
 
     return this;
   }
-
 
   validateChange(
     field: keyof P,

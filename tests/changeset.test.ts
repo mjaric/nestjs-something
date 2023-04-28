@@ -3,10 +3,19 @@ import { change } from "../src";
 import { cast } from "../src";
 import {
   validateConfirm,
-  validateDate, validateDateTime,
-  validateEmail, validateExclusion, validateFormat, validateInclusion, validateIp, validateIpv4, validateIpv6,
-  validateLength, validateNumber,
-  validateRequired, validateTime,
+  validateDate,
+  validateDateTime,
+  validateEmail,
+  validateExclusion,
+  validateFormat,
+  validateInclusion,
+  validateIp,
+  validateIpv4,
+  validateIpv6,
+  validateLength,
+  validateNumber,
+  validateRequired,
+  validateTime,
   validateUrl,
   validateUuid,
   validateAcceptance,
@@ -49,18 +58,21 @@ describe("changeset", () => {
 
   describe("cast", () => {
     it("should cast only permitted changes", async () => {
-      const changeset = change(newUser)
-        .pipe(
-          cast(
-            {
-              firstName: "John",
-              lastName: "Doe",
-              email: "john.doe@example.com",
-              address: { addressLine1: "123 Main St", postCode: "12345", city: "San Francisco" },
+      const changeset = change(newUser).pipe(
+        cast(
+          {
+            firstName: "John",
+            lastName: "Doe",
+            email: "john.doe@example.com",
+            address: {
+              addressLine1: "123 Main St",
+              postCode: "12345",
+              city: "San Francisco",
             },
-            ["firstName", "lastName", "email"],
-          ),
-        );
+          },
+          ["firstName", "lastName", "email"],
+        ),
+      );
       const result = await lastValueFrom(changeset);
       expect(result).toBeDefined();
       expect(result.data).toEqual({});
@@ -73,20 +85,23 @@ describe("changeset", () => {
     });
 
     it("should cast permitted and ignore empty params", async () => {
-      const changeset = change(newUser)
-        .pipe(
-          cast(
-            {
-              firstName: "John",
-              lastName: "Doe",
-              email: "",
-              age: 0,
-              address: { addressLine1: "123 Main St", postCode: "12345", city: "San Francisco" },
+      const changeset = change(newUser).pipe(
+        cast(
+          {
+            firstName: "John",
+            lastName: "Doe",
+            email: "",
+            age: 0,
+            address: {
+              addressLine1: "123 Main St",
+              postCode: "12345",
+              city: "San Francisco",
             },
-            ["firstName", "lastName", "email", "age"],
-            { empty: ["", undefined, 0] },
-          ),
-        );
+          },
+          ["firstName", "lastName", "email", "age"],
+          { empty: ["", undefined, 0] },
+        ),
+      );
       const result = await lastValueFrom(changeset);
       expect(result).toBeDefined();
       expect(result.data).toEqual({});
@@ -99,20 +114,23 @@ describe("changeset", () => {
 
     it("should cast all permitted even if equal when forced, but not empty params", async () => {
       newUser.age = 20;
-      const changeset = change(newUser)
-        .pipe(
-          cast(
-            {
-              firstName: "John",
-              lastName: "Doe",
-              email: "",
-              age: 20,
-              address: { addressLine1: "123 Main St", postCode: "12345", city: "San Francisco" },
+      const changeset = change(newUser).pipe(
+        cast(
+          {
+            firstName: "John",
+            lastName: "Doe",
+            email: "",
+            age: 20,
+            address: {
+              addressLine1: "123 Main St",
+              postCode: "12345",
+              city: "San Francisco",
             },
-            ["firstName", "lastName", "email", "age"],
-            { force: true, empty: ["", undefined] },
-          ),
-        );
+          },
+          ["firstName", "lastName", "email", "age"],
+          { force: true, empty: ["", undefined] },
+        ),
+      );
 
       const result = await lastValueFrom(changeset);
       expect(result).toBeDefined();
@@ -126,20 +144,23 @@ describe("changeset", () => {
     });
 
     it("should cast all permitted but skip empty and equal params", async () => {
-      const changeset = change(existingUser)
-        .pipe(
-          cast(
-            {
-              firstName: "John",
-              lastName: "Doe",
-              email: "john.doe@example.com",
-              age: 30,
-              address: { addressLine1: "123 Main St", postCode: "12345", city: "San Francisco" },
+      const changeset = change(existingUser).pipe(
+        cast(
+          {
+            firstName: "John",
+            lastName: "Doe",
+            email: "john.doe@example.com",
+            age: 30,
+            address: {
+              addressLine1: "123 Main St",
+              postCode: "12345",
+              city: "San Francisco",
             },
-            ["firstName", "lastName", "email", "age"],
-            { empty: ["", undefined] },
-          ),
-        );
+          },
+          ["firstName", "lastName", "email", "age"],
+          { empty: ["", undefined] },
+        ),
+      );
       const result = await lastValueFrom(changeset);
       expect(result).toBeDefined();
       expect(result.data).toEqual(existingUser);
@@ -148,28 +169,30 @@ describe("changeset", () => {
         lastName: "Doe",
       });
     });
-
   });
 
   describe("validations", () => {
     it("validateRequired should validate only permitted changes", async () => {
-      const changeset = change(newUser)
-        .pipe(
-          cast(
-            {
-              firstName: "John",
-              lastName: undefined,
-              email: "",
-              age: 0,
-              address: { addressLine1: "123 Main St", postCode: "12345", city: "San Francisco" },
+      const changeset = change(newUser).pipe(
+        cast(
+          {
+            firstName: "John",
+            lastName: undefined,
+            email: "",
+            age: 0,
+            address: {
+              addressLine1: "123 Main St",
+              postCode: "12345",
+              city: "San Francisco",
             },
-            ["firstName", "lastName", "email", "age"],
-            { empty: ["", undefined, 0] },
-          ),
-          validateRequired("firstName"),
-          validateRequired(["lastName"]),
-          validateRequired(["email", "age"]),
-        );
+          },
+          ["firstName", "lastName", "email", "age"],
+          { empty: ["", undefined, 0] },
+        ),
+        validateRequired("firstName"),
+        validateRequired(["lastName"]),
+        validateRequired(["email", "age"]),
+      );
 
       const result = await lastValueFrom(changeset);
       expect(result).toBeDefined();
@@ -189,21 +212,31 @@ describe("changeset", () => {
         firstName: "John",
         lastName: "Doe",
         someNumber: 123,
-        roles: ["admin", "user", "viewer", "tester", "developer", "manager", "owner", "guest", "supporter", "tester"],
+        roles: [
+          "admin",
+          "user",
+          "viewer",
+          "tester",
+          "developer",
+          "manager",
+          "owner",
+          "guest",
+          "supporter",
+          "tester",
+        ],
         obj: {
           key1: "value1",
           key2: "value2",
         },
       };
-      const changeset = change(newUser)
-        .pipe(
-          cast(params, ["firstName", "lastName", "roles", "obj", "someNumber"]),
-          validateLength("firstName", { min: 5 }),
-          validateLength("someNumber", { min: 5 }),
-          validateLength("lastName", { min: 3, max: 10 }),
-          validateLength("roles", { max: 3 }),
-          validateLength("obj", { max: 1 }),
-        );
+      const changeset = change(newUser).pipe(
+        cast(params, ["firstName", "lastName", "roles", "obj", "someNumber"]),
+        validateLength("firstName", { min: 5 }),
+        validateLength("someNumber", { min: 5 }),
+        validateLength("lastName", { min: 3, max: 10 }),
+        validateLength("roles", { max: 3 }),
+        validateLength("obj", { max: 1 }),
+      );
       const result = await lastValueFrom(changeset);
       expect(result).toBeDefined();
       expect(result.data).toEqual({});
@@ -212,12 +245,15 @@ describe("changeset", () => {
         lastName: "Doe",
       });
       expect(result.errors).toEqual({
-        firstName: [{ message: "must be at least 5 characters", validator: "length" }],
+        firstName: [
+          { message: "must be at least 5 characters", validator: "length" },
+        ],
         roles: [{ message: "must be at most 3 elements", validator: "length" }],
         obj: [{ message: "is not string or array", validator: "length" }],
-        someNumber: [{ message: "is not string or array", validator: "length" }],
+        someNumber: [
+          { message: "is not string or array", validator: "length" },
+        ],
       });
-
     });
 
     it("validateFormat should validate only permitted changes", async () => {
@@ -245,15 +281,14 @@ describe("changeset", () => {
       };
 
       const permitted = Object.keys(params) as (keyof typeof params)[];
-      const changeset = change({})
-        .pipe(
-          cast(params, permitted),
-          validateIp(["randomFalseIp", "randomIpv4", "randomIpv6"]),
-          validateEmail(["randomEmail", "falseEmail"]),
-          validateUrl(["randomUrl", "falseUrl"]),
-          validateUuid(["randomUuid", "falseUuid"]),
-          validateFormat("arrayField", { fmt: /ip/ }),
-        );
+      const changeset = change({}).pipe(
+        cast(params, permitted),
+        validateIp(["randomFalseIp", "randomIpv4", "randomIpv6"]),
+        validateEmail(["randomEmail", "falseEmail"]),
+        validateUrl(["randomUrl", "falseUrl"]),
+        validateUuid(["randomUuid", "falseUuid"]),
+        validateFormat("arrayField", { fmt: /ip/ }),
+      );
 
       const result = await lastValueFrom(changeset);
 
@@ -283,15 +318,25 @@ describe("changeset", () => {
         arrayField: [{ message: "is not a string.", validator: "format" }],
       });
 
-      const changeset2 = change({})
-        .pipe(
-          cast(params, ["randomFalseIp", "randomIpv4", "randomIpv6", "someDateTime", "someDate", "someTime", "falseDate", "falseTime", "falseDateTime", "someDateTimeShorter"]),
-          validateIpv4(["randomFalseIp", "randomIpv4"]),
-          validateIpv6("randomIpv6"),
-          validateDate(["someDate", "falseDate"]),
-          validateTime(["someTime", "falseTime"]),
-          validateDateTime(["someDateTime", "falseDateTime"]),
-        );
+      const changeset2 = change({}).pipe(
+        cast(params, [
+          "randomFalseIp",
+          "randomIpv4",
+          "randomIpv6",
+          "someDateTime",
+          "someDate",
+          "someTime",
+          "falseDate",
+          "falseTime",
+          "falseDateTime",
+          "someDateTimeShorter",
+        ]),
+        validateIpv4(["randomFalseIp", "randomIpv4"]),
+        validateIpv6("randomIpv6"),
+        validateDate(["someDate", "falseDate"]),
+        validateTime(["someTime", "falseTime"]),
+        validateDateTime(["someDateTime", "falseDateTime"]),
+      );
 
       const result2 = await lastValueFrom(changeset2);
       expect(result2).toBeDefined();
@@ -311,7 +356,6 @@ describe("changeset", () => {
         falseTime: [{ message: "is not valid.", validator: "format" }],
         falseDateTime: [{ message: "is not valid.", validator: "format" }],
       });
-
     });
 
     it("validateInclusion should validate only permitted changes", async () => {
@@ -322,14 +366,15 @@ describe("changeset", () => {
         someUndefined: undefined,
       };
 
-      const changeset = change({})
-        .pipe(
-          cast(params, ["someNumber", "someString", "someNull", "someUndefined"]),
-          validateInclusion("someNumber", { in: [1, 2, 3] }),
-          validateInclusion("someString", { in: ["some string", "another string"] }),
-          validateInclusion("someNull", { in: ["some string"] }),
-          validateInclusion("someUndefined", { in: ["some string"] }),
-        );
+      const changeset = change({}).pipe(
+        cast(params, ["someNumber", "someString", "someNull", "someUndefined"]),
+        validateInclusion("someNumber", { in: [1, 2, 3] }),
+        validateInclusion("someString", {
+          in: ["some string", "another string"],
+        }),
+        validateInclusion("someNull", { in: ["some string"] }),
+        validateInclusion("someUndefined", { in: ["some string"] }),
+      );
 
       const result = await lastValueFrom(changeset);
       expect(result).toBeDefined();
@@ -340,8 +385,20 @@ describe("changeset", () => {
         someString: "some string",
       });
       expect(result.errors).toEqual({
-        someNull: [{ message: "should be one of: some string", validator: "inclusion", in: ["some string"] }],
-        someUndefined: [{ message: "should be one of: some string", validator: "inclusion", in: ["some string"] }],
+        someNull: [
+          {
+            message: "should be one of: some string",
+            validator: "inclusion",
+            in: ["some string"],
+          },
+        ],
+        someUndefined: [
+          {
+            message: "should be one of: some string",
+            validator: "inclusion",
+            in: ["some string"],
+          },
+        ],
       });
     });
 
@@ -355,14 +412,18 @@ describe("changeset", () => {
         notInRange4: 3,
       };
 
-      const changeset = change({})
-        .pipe(
-          cast(params, ["someNumber", "someString", "notInRange1", "notInRange2"]),
-          validateNumber("someNumber", { eq: 2, message: "should be 2" }),
-          validateNumber("someString", { eq: 1, message: "should be ${eq}" }),
-          validateNumber("notInRange1", { gt: 1, lt: 10 }),
-          validateNumber("notInRange2", { gte: 1, lte: 10 }),
-        );
+      const changeset = change({}).pipe(
+        cast(params, [
+          "someNumber",
+          "someString",
+          "notInRange1",
+          "notInRange2",
+        ]),
+        validateNumber("someNumber", { eq: 2, message: "should be 2" }),
+        validateNumber("someString", { eq: 1, message: "should be ${eq}" }),
+        validateNumber("notInRange1", { gt: 1, lt: 10 }),
+        validateNumber("notInRange2", { gte: 1, lte: 10 }),
+      );
 
       const result = await lastValueFrom(changeset);
       expect(result).toBeDefined();
@@ -371,53 +432,100 @@ describe("changeset", () => {
       expect(result.changes).toEqual({});
       expect(result.errors).toEqual({
         someNumber: [{ message: "should be 2", validator: "number", eq: 2 }],
-        someString: [{ message: "is not a number", validator: "number", eq: 1 }],
-        notInRange1: [{ message: "must be greater than 1", validator: "number", gt: 1, lt: 10 }],
-        notInRange2: [{ message: "must be less than or equal to 10", validator: "number", gte: 1, lte: 10 }],
+        someString: [
+          { message: "is not a number", validator: "number", eq: 1 },
+        ],
+        notInRange1: [
+          {
+            message: "must be greater than 1",
+            validator: "number",
+            gt: 1,
+            lt: 10,
+          },
+        ],
+        notInRange2: [
+          {
+            message: "must be less than or equal to 10",
+            validator: "number",
+            gte: 1,
+            lte: 10,
+          },
+        ],
       });
     });
 
     const faultyValidateNumberOpts = [
-      { opts: {}, message: "validateNumber: at least one of `gt`, `gte`, `lt`, `lte` or `eq` must be configured" },
-      { opts: { message: "should be 2" }, message: "validateNumber: at least one of `gt`, `gte`, `lt`, `lte` or `eq` must be configured" },
-      { opts: { gt: 10, lt: 1 }, message: "validateNumber: `gt` must be lower than `lt`" },
-      { opts: { gte: 10, lte: 1 }, message: "validateNumber: `gte` must be lower than `lte`" },
-      { opts: { gte: 10, lt: 1 }, message: "validateNumber: `gte` must be lower than `lt`" },
-      { opts: { gt: 10, lte: 1 }, message: "validateNumber: `gt` must be lower than `lte`" },
-      { opts: { gt: 1, gte: 1 }, message: "validateNumber: `gt` and `gte` can't be configured together" },
-      { opts: { lt: 1, lte: 1 }, message: "validateNumber: `lt` and `lte` can't be configured together" },
-      { opts: { eq: 1, gte: 1 }, message: "validateNumber: `eq` can't be configured with `gt`, `gte`, `lt` or `lte`" },
+      {
+        opts: {},
+        message:
+          "validateNumber: at least one of `gt`, `gte`, `lt`, `lte` or `eq` must be configured",
+      },
+      {
+        opts: { message: "should be 2" },
+        message:
+          "validateNumber: at least one of `gt`, `gte`, `lt`, `lte` or `eq` must be configured",
+      },
+      {
+        opts: { gt: 10, lt: 1 },
+        message: "validateNumber: `gt` must be lower than `lt`",
+      },
+      {
+        opts: { gte: 10, lte: 1 },
+        message: "validateNumber: `gte` must be lower than `lte`",
+      },
+      {
+        opts: { gte: 10, lt: 1 },
+        message: "validateNumber: `gte` must be lower than `lt`",
+      },
+      {
+        opts: { gt: 10, lte: 1 },
+        message: "validateNumber: `gt` must be lower than `lte`",
+      },
+      {
+        opts: { gt: 1, gte: 1 },
+        message: "validateNumber: `gt` and `gte` can't be configured together",
+      },
+      {
+        opts: { lt: 1, lte: 1 },
+        message: "validateNumber: `lt` and `lte` can't be configured together",
+      },
+      {
+        opts: { eq: 1, gte: 1 },
+        message:
+          "validateNumber: `eq` can't be configured with `gt`, `gte`, `lt` or `lte`",
+      },
     ];
 
-    it.each(faultyValidateNumberOpts)("validateNumber should throw error if used incorrectly %j", async (item) => {
-      const { opts, message } = item;
-      const params = {
-        someNumber: 1,
-      };
+    it.each(faultyValidateNumberOpts)(
+      "validateNumber should throw error if used incorrectly %j",
+      async (item) => {
+        const { opts, message } = item;
+        const params = {
+          someNumber: 1,
+        };
 
-      try {
-        change({})
-          .pipe(
+        try {
+          change({}).pipe(
             cast(params, ["someNumber"]),
             validateNumber("someNumber", opts),
           );
-      } catch (e) {
-        expect(e.message).toEqual(message);
-      }
-    });
+        } catch (e) {
+          expect(e.message).toEqual(message);
+        }
+      },
+    );
 
     it("validateExclusion should validate only permitted changes", async () => {
       const params = {
         someNumber: 1,
         someNumber2: 2,
-      }
+      };
 
-      const changeset = change({})
-        .pipe(
-          cast(params, ["someNumber", "someNumber2"]),
-          validateExclusion("someNumber", { notIn: [2, 3] }),
-          validateExclusion("someNumber2", { notIn: [1, 2, 3] }),
-        );
+      const changeset = change({}).pipe(
+        cast(params, ["someNumber", "someNumber2"]),
+        validateExclusion("someNumber", { notIn: [2, 3] }),
+        validateExclusion("someNumber2", { notIn: [1, 2, 3] }),
+      );
 
       const result = await lastValueFrom(changeset);
       expect(result).toBeDefined();
@@ -427,11 +535,17 @@ describe("changeset", () => {
         someNumber: 1,
       });
       expect(result.errors).toEqual({
-        someNumber2: [{ message: "should not be one of: 1, 2, 3", validator: "exclusion", notIn: [1, 2, 3] }],
+        someNumber2: [
+          {
+            message: "should not be one of: 1, 2, 3",
+            validator: "exclusion",
+            notIn: [1, 2, 3],
+          },
+        ],
       });
     });
 
-    it ("validateConfirm should validate only permitted changes", async () => {
+    it("validateConfirm should validate only permitted changes", async () => {
       const params = {
         password: "password",
         passwordConfirmation: "password",
@@ -439,15 +553,14 @@ describe("changeset", () => {
         emailConfirm: "other@example.com",
         pinCode: "1234",
         pinCodeConfirm: "2234",
-      }
+      };
 
-      const changeset = change({})
-        .pipe(
-          cast(params, ["password"]),
-          validateConfirm("password", { confirm: "passwordConfirmation" }),
-          validateConfirm("email"),
-          validateConfirm("pinCode", { message: "should match" }),
-        );
+      const changeset = change({}).pipe(
+        cast(params, ["password"]),
+        validateConfirm("password", { confirm: "passwordConfirmation" }),
+        validateConfirm("email"),
+        validateConfirm("pinCode", { message: "should match" }),
+      );
 
       const result = await lastValueFrom(changeset);
       expect(result).toBeDefined();
@@ -457,8 +570,20 @@ describe("changeset", () => {
         password: "password",
       });
       expect(result.errors).toEqual({
-        email: [{ message: "doesn't match", validator: "confirm", confirm: "emailConfirm" }],
-        pinCode: [{ message: "should match", validator: "confirm", confirm: "pinCodeConfirm" }],
+        email: [
+          {
+            message: "doesn't match",
+            validator: "confirm",
+            confirm: "emailConfirm",
+          },
+        ],
+        pinCode: [
+          {
+            message: "should match",
+            validator: "confirm",
+            confirm: "pinCodeConfirm",
+          },
+        ],
       });
     });
 
@@ -473,20 +598,34 @@ describe("changeset", () => {
         someBoolean6: "false",
         someBoolean7: "Yes",
         someBoolean8: "I don't care",
-      }
+      };
 
-      const changeset = change({})
-        .pipe(
-          cast(params, ["someBoolean", "someBoolean2", "someBoolean3", "someBoolean4", "someBoolean5", "someBoolean6", "someBoolean7", "someBoolean8"]),
-          validateAcceptance("someBoolean"),
-          validateAcceptance("someBoolean2", { message: "should be accepted" }),
-          validateAcceptance("someBoolean3", { message: "should be accepted" }),
-          validateAcceptance("someBoolean4", { message: "should be accepted" }),
-          validateAcceptance("someBoolean5", { message: "should be accepted" }),
-          validateAcceptance("someBoolean6", { message: "should be accepted" }),
-          validateAcceptance("someBoolean7", { message: "should be accepted", truthy: ["Yes"] }),
-          validateAcceptance("someBoolean8", { message: "should be accepted with `Yes`", truthy: ["Yes"] }),
-        );
+      const changeset = change({}).pipe(
+        cast(params, [
+          "someBoolean",
+          "someBoolean2",
+          "someBoolean3",
+          "someBoolean4",
+          "someBoolean5",
+          "someBoolean6",
+          "someBoolean7",
+          "someBoolean8",
+        ]),
+        validateAcceptance("someBoolean"),
+        validateAcceptance("someBoolean2", { message: "should be accepted" }),
+        validateAcceptance("someBoolean3", { message: "should be accepted" }),
+        validateAcceptance("someBoolean4", { message: "should be accepted" }),
+        validateAcceptance("someBoolean5", { message: "should be accepted" }),
+        validateAcceptance("someBoolean6", { message: "should be accepted" }),
+        validateAcceptance("someBoolean7", {
+          message: "should be accepted",
+          truthy: ["Yes"],
+        }),
+        validateAcceptance("someBoolean8", {
+          message: "should be accepted with `Yes`",
+          truthy: ["Yes"],
+        }),
+      );
 
       const result = await lastValueFrom(changeset);
       expect(result).toBeDefined();
@@ -500,9 +639,27 @@ describe("changeset", () => {
         someBoolean7: "Yes",
       });
       expect(result.errors).toEqual({
-        someBoolean2: [{ message: "should be accepted", validator: "acceptance", truthy: [true, "true", 1, "1"] }],
-        someBoolean6: [{ message: "should be accepted", validator: "acceptance", truthy: [true, "true", 1, "1"] }],
-        someBoolean8: [{ message: "should be accepted with `Yes`", validator: "acceptance", truthy: ["Yes"] }],
+        someBoolean2: [
+          {
+            message: "should be accepted",
+            validator: "acceptance",
+            truthy: [true, "true", 1, "1"],
+          },
+        ],
+        someBoolean6: [
+          {
+            message: "should be accepted",
+            validator: "acceptance",
+            truthy: [true, "true", 1, "1"],
+          },
+        ],
+        someBoolean8: [
+          {
+            message: "should be accepted with `Yes`",
+            validator: "acceptance",
+            truthy: ["Yes"],
+          },
+        ],
       });
     });
   });

@@ -6,15 +6,11 @@
 export function pluralize(word: string, count: number) {
   // exceptions come first
   const exceptions = {
-    "child": "children",
-    "person": 'people',
-    "datum": "data",
-  }
+    child: "children",
+    person: "people",
+    datum: "data",
+  };
   if (count === 1) return word;
   if (exceptions[word]) return exceptions[word];
   return `${word}s`;
 }
-
-
-
-

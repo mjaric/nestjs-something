@@ -1,5 +1,3 @@
-import { User } from "./user.model";
-
 // @DomainEvent(User, 'user.created')
 export class UserCreated {
   constructor(
@@ -10,12 +8,11 @@ export class UserCreated {
     public readonly acceptedTerms: boolean,
     public readonly role: string,
     public readonly address: {
-      addressLine: string,
-      postalCode: string,
-      city: string,
-    }
-  ) {
-  }
+      addressLine: string;
+      postalCode: string;
+      city: string;
+    },
+  ) {}
 }
 
 export class UserAddressChanged {
@@ -24,6 +21,5 @@ export class UserAddressChanged {
     public readonly addressLine: string,
     public readonly postalCode: string,
     public readonly city: string,
-  ) {
-  }
+  ) {}
 }

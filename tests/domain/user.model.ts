@@ -1,9 +1,10 @@
 import { AggregateRoot, EmbedsMany, EmbedsOne, Field } from "../../src";
 import { Address } from "./address.model";
 import { Hobby } from "./hobby.model";
-import { UserCreated } from "./events";
+import { UserAddressChanged, UserCreated } from "./events";
+import { Apply } from "../../src/decorators";
 
-@AggregateRoot()
+@AggregateRoot(1)
 export class User {
   @Field()
   id: string;
@@ -22,4 +23,29 @@ export class User {
   address?: Address;
   @EmbedsMany()
   readonly hobbies: Hobby[] = [];
+
+  // versioning
+  vsn = 0;
+  snapshotVsn = 0;
+
+  @Apply(UserCreated)
+  onUserCreated(event: UserCreated, _formHistory?: boolean) {
+    this.id = event.id;
+    this.firstName = event.firstName;
+    this.lastName = event.lastName;
+    this.age = event.age;
+    this.acceptedTerms = event.acceptedTerms;
+    this.role = event.role;
+    this.address = event.address;
+    this.vsn++;
+  }
+
+  @Apply(UserAddressChanged)
+  onUserAddressChanged(event: UserAddressChanged, _formHistory?: boolean) {
+    this.address = new Address();
+    this.address.addressLine = event.addressLine;
+    this.address.postalCode = event.postalCode;
+    this.address.city = event.city;
+    this.vsn++;
+  }
 }

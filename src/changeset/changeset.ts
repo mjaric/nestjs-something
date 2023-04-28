@@ -28,7 +28,7 @@ export function cast<M extends Model<M>, P extends Params<P>>(
       map(({ data, errors, changes }) => {
         const castOpts: CastOptions = {
           force: opts?.force ?? false,
-          empty: [...opts?.empty ?? [undefined]],
+          empty: [...(opts?.empty ?? [undefined])],
           message: opts?.message ?? "is invalid",
         };
         const newChangeset: Changeset<M, P> = {
@@ -77,7 +77,7 @@ export function cast<M extends Model<M>, P extends Params<P>>(
   };
 }
 
-export function isEmpty(empties: Array<unknown>, value: any): boolean {
+export function isEmpty(empties: Array<unknown>, value: unknown): boolean {
   return empties.some((v: unknown) => {
     if (!Number.isNaN(Number(v)) && !Number.isNaN(Number(value))) {
       return v === value;

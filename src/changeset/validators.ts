@@ -1,7 +1,6 @@
-import { min, Observable } from "rxjs";
-import { Changeset, isEmpty, Model, Params } from "./changeset";
+import { Observable } from "rxjs";
+import { Changeset, Model, Params } from "./changeset";
 import { map } from "rxjs/operators";
-import { change } from "./index";
 import { pluralize } from "../helpers";
 
 export enum Validator {
@@ -21,11 +20,11 @@ export type Error =
   | ({ validator: Validator.number } & ValidateNumberOpts)
   | { validator: Validator.length; message: string; min?: number; max?: number }
   | { validator: Validator.format; message: string }
-  | { validator: Validator.inclusion; message: string; in: Array<unknown>; }
+  | { validator: Validator.inclusion; message: string; in: Array<unknown> }
   | { validator: Validator.exclusion; message: string; notIn: Array<unknown> }
   | { validator: Validator.confirm; message: string; confirm: string }
   | { validator: Validator.subset; message: string }
-  | { validator: Validator.acceptance; message: string, truthy: Array<unknown> }
+  | { validator: Validator.acceptance; message: string; truthy: Array<unknown> }
   // everything below is not implemented yet, left for extensions
   | { validator: string; message: string; opts: unknown };
 export type Errors<T> = Partial<{
@@ -48,9 +47,15 @@ export function validateRequired<M extends Model<M>, P extends Params<P>>(
       map(({ changes, params, data, errors }) => {
         const message = opts?.message ?? "can't be blank";
         const validator = Validator.required;
-        const fieldsArray = Array.isArray(fields) ? (fields as Array<keyof P>) : [fields];
-        fieldsArray.forEach(field => {
-          if (changes[field] === undefined || changes[field] === null || changes[field] === "") {
+        const fieldsArray = Array.isArray(fields)
+          ? (fields as Array<keyof P>)
+          : [fields];
+        fieldsArray.forEach((field) => {
+          if (
+            changes[field] === undefined ||
+            changes[field] === null ||
+            changes[field] === ""
+          ) {
             delete changes[field];
             errors[field] = [{ validator, message }];
           }
@@ -67,9 +72,8 @@ export type ValidateNumberOpts = {
   lt?: number;
   lte?: number;
   eq?: number;
-  message?: string
+  message?: string;
 };
-
 
 /**
  * Number validator. Checks if value is a number and in configured range.
@@ -94,25 +98,43 @@ export function validateNumber<M extends Model<M>, P extends Params<P>>(
   field: keyof P,
   opts?: ValidateNumberOpts,
 ) {
-
-  const validOpts = [opts.gte, opts.gt, opts.lte, opts.lt, opts.eq]
-    .some((value) => undefined !== value);
+  const validOpts = [opts.gte, opts.gt, opts.lte, opts.lt, opts.eq].some(
+    (value) => undefined !== value,
+  );
   if (!validOpts) {
-    throw new Error("validateNumber: at least one of `gt`, `gte`, `lt`, `lte` or `eq` must be configured");
+    throw new Error(
+      "validateNumber: at least one of `gt`, `gte`, `lt`, `lte` or `eq` must be configured",
+    );
   }
   if (opts.gt !== undefined && opts.gte !== undefined) {
-    throw new Error("validateNumber: `gt` and `gte` can't be configured together");
+    throw new Error(
+      "validateNumber: `gt` and `gte` can't be configured together",
+    );
   }
   if (opts.lt !== undefined && opts.lte !== undefined) {
-    throw new Error("validateNumber: `lt` and `lte` can't be configured together");
+    throw new Error(
+      "validateNumber: `lt` and `lte` can't be configured together",
+    );
   }
-  if (opts.eq !== undefined && (opts.gt !== undefined || opts.gte !== undefined || opts.lt !== undefined || opts.lte !== undefined)) {
-    throw new Error("validateNumber: `eq` can't be configured with `gt`, `gte`, `lt` or `lte`");
+  if (
+    opts.eq !== undefined &&
+    (opts.gt !== undefined ||
+      opts.gte !== undefined ||
+      opts.lt !== undefined ||
+      opts.lte !== undefined)
+  ) {
+    throw new Error(
+      "validateNumber: `eq` can't be configured with `gt`, `gte`, `lt` or `lte`",
+    );
   }
   if (opts.gt !== undefined && opts.lt !== undefined && opts.gt >= opts.lt) {
     throw new Error("validateNumber: `gt` must be lower than `lt`");
   }
-  if (opts.gte !== undefined && opts.lte !== undefined && opts.gte >= opts.lte) {
+  if (
+    opts.gte !== undefined &&
+    opts.lte !== undefined &&
+    opts.gte >= opts.lte
+  ) {
     throw new Error("validateNumber: `gte` must be lower than `lte`");
   }
   if (opts.gt !== undefined && opts.lte !== undefined && opts.gt >= opts.lte) {
@@ -138,34 +160,46 @@ export function validateNumber<M extends Model<M>, P extends Params<P>>(
           errors[field] = [{ validator, ...opts, message: "is not a number" }];
           return { data, changes, errors, params };
         }
-        
+
         // if we check for equality only, then check it and return
         if (opts.eq !== undefined && value !== opts.eq) {
           delete changes[field];
-          const message = (opts.message ?? 'must be equal to ${eq}').replace('${eq}', opts.eq.toString())
+          const message = (opts.message ?? "must be equal to ${eq}").replace(
+            "${eq}",
+            opts.eq.toString(),
+          );
           errors[field] = [{ validator, ...opts, message }];
           return { data, changes, errors, params };
         }
         const innerErrors = [];
         // if we check for gt, gte, lt, lte, then check it and return
         if (opts.lt !== undefined && mustBeNumber >= opts.lt) {
-          const message = (opts.message ?? 'must be less than ${lt}').replace('${lt}', opts.lt.toString())
+          const message = (opts.message ?? "must be less than ${lt}").replace(
+            "${lt}",
+            opts.lt.toString(),
+          );
           innerErrors.push({ validator, ...opts, message });
         }
         if (opts.lte !== undefined && mustBeNumber > opts.lte) {
-          const message = (opts.message ?? 'must be less than or equal to ${lte}').replace('${lte}', opts.lte.toString())
+          const message = (
+            opts.message ?? "must be less than or equal to ${lte}"
+          ).replace("${lte}", opts.lte.toString());
           innerErrors.push({ validator, ...opts, message });
         }
         if (opts.gt !== undefined && mustBeNumber <= opts.gt) {
-          const message = (opts.message ?? 'must be greater than ${gt}').replace('${gt}', opts.gt.toString())
+          const message = (
+            opts.message ?? "must be greater than ${gt}"
+          ).replace("${gt}", opts.gt.toString());
           innerErrors.push({ validator, ...opts, message });
         }
         if (opts.gte !== undefined && mustBeNumber < opts.gte) {
-          const message = (opts.message ?? 'must be greater than or equal to ${gte}').replace('${gte}', opts.gte.toString())
+          const message = (
+            opts.message ?? "must be greater than or equal to ${gte}"
+          ).replace("${gte}", opts.gte.toString());
           innerErrors.push({ validator, ...opts, message });
         }
 
-        if(Array.isArray(innerErrors)) {
+        if (Array.isArray(innerErrors)) {
           delete changes[field];
           errors[field] = innerErrors;
         }
@@ -207,29 +241,38 @@ export function validateLength<M extends Model<M>, P extends Params<P>>(
         const isArray = Array.isArray(value);
         if (typeof value !== "string" && !isArray) {
           delete changes[field];
-          errors[field] = [...errors[field] ?? [], { validator, message: "is not string or array" }];
+          errors[field] = [
+            ...(errors[field] ?? []),
+            { validator, message: "is not string or array" },
+          ];
           return { params, data, errors, changes };
         }
         if (opts.min !== undefined && value.length < opts.min) {
           delete changes[field];
           let element = isArray ? "element" : "character";
           element = pluralize(element, opts.max);
-          const message = opts?.message ?? `must be at least \${min} ${element}`;
-          errors[field] = [...errors[field] ?? [], {
-            validator,
-            message: message.replace("${min}", opts.min.toString()),
-          }];
-
+          const message =
+            opts?.message ?? `must be at least \${min} ${element}`;
+          errors[field] = [
+            ...(errors[field] ?? []),
+            {
+              validator,
+              message: message.replace("${min}", opts.min.toString()),
+            },
+          ];
         }
         if (opts.max !== undefined && value.length > opts.max) {
           delete changes[field];
           let element = isArray ? "element" : "character";
           element = pluralize(element, opts.max);
           const message = opts?.message ?? `must be at most \${max} ${element}`;
-          errors[field] = [...errors[field] ?? [], {
-            validator,
-            message: message.replace("${max}", opts.max.toString()),
-          }];
+          errors[field] = [
+            ...(errors[field] ?? []),
+            {
+              validator,
+              message: message.replace("${max}", opts.max.toString()),
+            },
+          ];
         }
         return { params, data, errors, changes };
       }),
@@ -248,7 +291,8 @@ const FORMATS = {
   date: /^\d{2,4}-\d{1,2}-\d{1,2}$/,
   time: /^\d{1,2}:\d{1,2}:\d{1,2}$/,
   // iso 8601 datetime format
-  dateTime: /^\d{2,4}-\d{1,2}-\d{1,2}T\d{1,2}:\d{1,2}:\d{1,2}(\.\d+)?(Z|[+-]\d{1,2}:\d{1,2})?$/,
+  dateTime:
+    /^\d{2,4}-\d{1,2}-\d{1,2}T\d{1,2}:\d{1,2}:\d{1,2}(\.\d+)?(Z|[+-]\d{1,2}:\d{1,2})?$/,
 };
 
 /**
@@ -264,9 +308,9 @@ export function validateFormat<M extends Model<M>, P extends Params<P>>(
 ) {
   return (source: Observable<Changeset<M, P>>): Observable<Changeset<M, P>> => {
     return source.pipe(
-      map(changeset => {
+      map((changeset) => {
         const validator = Validator.format;
-        let fields = !Array.isArray(field) ? [field] : field;
+        const fields = !Array.isArray(field) ? [field] : field;
         return fields.reduce(({ params, data, errors, changes }, f) => {
           const value = changes[f];
           if (value === undefined || value === null || value === "") {
@@ -274,12 +318,18 @@ export function validateFormat<M extends Model<M>, P extends Params<P>>(
           }
           if (typeof value !== "string") {
             delete changes[f];
-            errors[f] = [...errors[f] ?? [], { validator, message: "is not a string." }];
+            errors[f] = [
+              ...(errors[f] ?? []),
+              { validator, message: "is not a string." },
+            ];
             return { params, data, errors, changes };
           }
           if (!opts.fmt.test(value)) {
             delete changes[f];
-            errors[f] = [...errors[f] ?? [], { validator, message: opts?.message ?? "is not valid." }];
+            errors[f] = [
+              ...(errors[f] ?? []),
+              { validator, message: opts?.message ?? "is not valid." },
+            ];
           }
           return { params, data, errors, changes };
         }, changeset);
@@ -293,7 +343,10 @@ export function validateFormat<M extends Model<M>, P extends Params<P>>(
  * @param field - Field to be validated.
  * @param message - Error message. Can be used to override default error message which is "is invalid".
  */
-export function validateEmail<M extends Model<M>, P extends Params<P>>(field: keyof P | Array<keyof P>, message?: string) {
+export function validateEmail<M extends Model<M>, P extends Params<P>>(
+  field: keyof P | Array<keyof P>,
+  message?: string,
+) {
   return validateFormat(field, { fmt: FORMATS.email, message });
 }
 
@@ -302,7 +355,10 @@ export function validateEmail<M extends Model<M>, P extends Params<P>>(field: ke
  * @param field - Field to be validated.
  * @param message - Error message. Can be used to override default error message which is "is invalid".
  */
-export function validateUrl<M extends Model<M>, P extends Params<P>>(field: keyof P | Array<keyof P>, message?: string) {
+export function validateUrl<M extends Model<M>, P extends Params<P>>(
+  field: keyof P | Array<keyof P>,
+  message?: string,
+) {
   return validateFormat<M, P>(field, { fmt: FORMATS.url, message });
 }
 
@@ -311,7 +367,10 @@ export function validateUrl<M extends Model<M>, P extends Params<P>>(field: keyo
  * @param field - Field to be validated.
  * @param message - Error message. Can be used to override default error message which is "is invalid".
  */
-export function validateIp<M extends Model<M>, P extends Params<P>>(field: keyof P | Array<keyof P>, message?: string) {
+export function validateIp<M extends Model<M>, P extends Params<P>>(
+  field: keyof P | Array<keyof P>,
+  message?: string,
+) {
   return validateFormat(field, { fmt: FORMATS.ip, message });
 }
 
@@ -320,7 +379,10 @@ export function validateIp<M extends Model<M>, P extends Params<P>>(field: keyof
  * @param field - Field to be validated.
  * @param message - Error message. Can be used to override default error message which is "is invalid".
  */
-export function validateIpv4<M extends Model<M>, P extends Params<P>>(field: keyof P | Array<keyof P>, message?: string) {
+export function validateIpv4<M extends Model<M>, P extends Params<P>>(
+  field: keyof P | Array<keyof P>,
+  message?: string,
+) {
   return validateFormat<M, P>(field, { fmt: FORMATS.ipv4, message });
 }
 
@@ -329,7 +391,10 @@ export function validateIpv4<M extends Model<M>, P extends Params<P>>(field: key
  * @param field - Field to be validated.
  * @param message - Error message. Can be used to override default error message which is "is invalid".
  */
-export function validateIpv6<M extends Model<M>, P extends Params<P>>(field: keyof P | Array<keyof P>, message?: string) {
+export function validateIpv6<M extends Model<M>, P extends Params<P>>(
+  field: keyof P | Array<keyof P>,
+  message?: string,
+) {
   return validateFormat<M, P>(field, { fmt: FORMATS.ipv6, message });
 }
 
@@ -338,7 +403,10 @@ export function validateIpv6<M extends Model<M>, P extends Params<P>>(field: key
  * @param field - Field to be validated.
  * @param message - Error message. Can be used to override default error message which is "is invalid".
  */
-export function validateUuid<M extends Model<M>, P extends Params<P>>(field: keyof P | Array<keyof P>, message?: string): (source: Observable<Changeset<M, P>>) => Observable<Changeset<M, P>> {
+export function validateUuid<M extends Model<M>, P extends Params<P>>(
+  field: keyof P | Array<keyof P>,
+  message?: string,
+): (source: Observable<Changeset<M, P>>) => Observable<Changeset<M, P>> {
   return validateFormat<M, P>(field, { fmt: FORMATS.uuid, message });
 }
 
@@ -347,7 +415,10 @@ export function validateUuid<M extends Model<M>, P extends Params<P>>(field: key
  * @param field - Field to be validated.
  * @param message - Error message. Can be used to override default error message which is "is invalid".
  */
-export function validateDate<M extends Model<M>, P extends Params<P>>(field: keyof P | Array<keyof P>, message?: string) {
+export function validateDate<M extends Model<M>, P extends Params<P>>(
+  field: keyof P | Array<keyof P>,
+  message?: string,
+) {
   return validateFormat<M, P>(field, { fmt: FORMATS.date, message });
 }
 
@@ -356,7 +427,10 @@ export function validateDate<M extends Model<M>, P extends Params<P>>(field: key
  * @param field - Field to be validated.
  * @param message - Error message. Can be used to override default error message which is "is invalid".
  */
-export function validateTime<M extends Model<M>, P extends Params<P>>(field: keyof P | Array<keyof P>, message?: string) {
+export function validateTime<M extends Model<M>, P extends Params<P>>(
+  field: keyof P | Array<keyof P>,
+  message?: string,
+) {
   return validateFormat<M, P>(field, { fmt: FORMATS.time, message });
 }
 
@@ -365,7 +439,10 @@ export function validateTime<M extends Model<M>, P extends Params<P>>(field: key
  * @param field - Field to be validated.
  * @param message - Error message. Can be used to override default error message which is "is invalid".
  */
-export function validateDateTime<M extends Model<M>, P extends Params<P>>(field: keyof P | Array<keyof P>, message?: string) {
+export function validateDateTime<M extends Model<M>, P extends Params<P>>(
+  field: keyof P | Array<keyof P>,
+  message?: string,
+) {
   return validateFormat<M, P>(field, { fmt: FORMATS.dateTime, message });
 }
 
@@ -379,7 +456,7 @@ export function validateDateTime<M extends Model<M>, P extends Params<P>>(field:
  */
 export function validateInclusion<M extends Model<M>, P extends Params<P>>(
   field: keyof P,
-  opts: { in: Array<unknown>; message?: string; },
+  opts: { in: Array<unknown>; message?: string },
 ) {
   return (source: Observable<Changeset<M, P>>): Observable<Changeset<M, P>> => {
     return source.pipe(
@@ -389,9 +466,14 @@ export function validateInclusion<M extends Model<M>, P extends Params<P>>(
 
         if (!opts.in.includes(value)) {
           delete changes[field];
-          const message = (opts?.message ?? "should be one of: ${in}")
-            .replace("${in}", opts.in.join(", "));
-          errors[field] = [...errors[field] ?? [], { validator, message, in: opts.in }];
+          const message = (opts?.message ?? "should be one of: ${in}").replace(
+            "${in}",
+            opts.in.join(", "),
+          );
+          errors[field] = [
+            ...(errors[field] ?? []),
+            { validator, message, in: opts.in },
+          ];
         }
         return { params, data, errors, changes };
       }),
@@ -409,7 +491,7 @@ export function validateInclusion<M extends Model<M>, P extends Params<P>>(
  */
 export function validateExclusion<M extends Model<M>, P extends Params<P>>(
   field: keyof P,
-  opts: { notIn: Array<unknown>; message?: string; },
+  opts: { notIn: Array<unknown>; message?: string },
 ) {
   return (source: Observable<Changeset<M, P>>): Observable<Changeset<M, P>> => {
     return source.pipe(
@@ -419,9 +501,13 @@ export function validateExclusion<M extends Model<M>, P extends Params<P>>(
 
         if (opts.notIn.includes(value)) {
           delete changes[field];
-          const message = (opts?.message ?? "should not be one of: ${notIn}")
-            .replace("${notIn}", opts.notIn.join(", "));
-          errors[field] = [...errors[field] ?? [], { validator, message, notIn: opts.notIn }];
+          const message = (
+            opts?.message ?? "should not be one of: ${notIn}"
+          ).replace("${notIn}", opts.notIn.join(", "));
+          errors[field] = [
+            ...(errors[field] ?? []),
+            { validator, message, notIn: opts.notIn },
+          ];
         }
         return { params, data, errors, changes };
       }),
@@ -439,7 +525,7 @@ export function validateExclusion<M extends Model<M>, P extends Params<P>>(
  */
 export function validateConfirm<M extends Model<M>, P extends Params<P>>(
   field: keyof P,
-  opts?: { confirm?: string; message?: string; },
+  opts?: { confirm?: string; message?: string },
 ) {
   return (source: Observable<Changeset<M, P>>): Observable<Changeset<M, P>> => {
     return source.pipe(
@@ -451,7 +537,10 @@ export function validateConfirm<M extends Model<M>, P extends Params<P>>(
         if (value !== params[confirm]) {
           delete changes[field];
           const message = opts?.message ?? "doesn't match";
-          errors[field] = [...errors[field] ?? [], { validator, message, confirm }];
+          errors[field] = [
+            ...(errors[field] ?? []),
+            { validator, message, confirm },
+          ];
         }
         return { params, data, errors, changes };
       }),
@@ -459,13 +548,12 @@ export function validateConfirm<M extends Model<M>, P extends Params<P>>(
   };
 }
 
-
 /**
  * Acceptance validator. Checks if value is true.
  */
 export function validateAcceptance<M extends Model<M>, P extends Params<P>>(
   field: keyof P,
-  opts?: { message?: string; truthy?: Array<unknown>;},
+  opts?: { message?: string; truthy?: Array<unknown> },
 ) {
   return (source: Observable<Changeset<M, P>>): Observable<Changeset<M, P>> => {
     return source.pipe(
@@ -477,12 +565,13 @@ export function validateAcceptance<M extends Model<M>, P extends Params<P>>(
         if (truthy.includes(value) === false) {
           delete changes[field];
           const message = opts?.message ?? "must be accepted";
-          errors[field] = [...errors[field] ?? [], { validator, message, truthy }];
+          errors[field] = [
+            ...(errors[field] ?? []),
+            { validator, message, truthy },
+          ];
         }
         return { params, data, errors, changes };
       }),
     );
   };
 }
-
-
