@@ -1,12 +1,15 @@
 import { describe } from "node:test";
 import { AggregateRoot, EmbedsMany, EmbedsOne, Field } from "../src";
+import { Hobby } from "./domain/hobby.model";
+import { Address } from "./domain/address.model";
+import { User } from "./domain/user.model";
 
 
 describe("Decorators", () => {
   it("should register aggregate roots", () => {
     expect(true).toBe(true);
   });
-  /*describe("AggregateRoot", () => {
+  describe("AggregateRoot", () => {
     it("should register aggregate roots", () => {
       expect(Reflect.getMetadata(AggregateRoot.META_KEY, User)).toBe(true);
 
@@ -54,5 +57,5 @@ describe("Decorators", () => {
       expect(Reflect.getMetadata(Field.META_KEY, Hobby, "name")).toBeDefined();
       expect(Reflect.getMetadata(Field.META_KEY, Hobby, "since")).toBeDefined();
     });
-  });*/
+  });
 });
