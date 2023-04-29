@@ -1,23 +1,37 @@
-import { AggregateRoot, EmbedsMany, EmbedsOne, Field } from "../../src";
+import {
+  AggregateRoot,
+  EmbedsMany,
+  EmbedsOne,
+  Field,
+  SchemaInfo,
+} from "../../src";
 import { Address } from "./address.model";
 import { Hobby } from "./hobby.model";
 import { UserAddressChanged, UserCreated } from "./events";
-import { Apply } from "../../src/decorators";
+import { Apply } from "../../src/schema";
 
-@AggregateRoot(1)
+export function defaultRole() {
+  return "user";
+}
+
+export function defaultAcceptedTerms() {
+  return false;
+}
+
+@AggregateRoot(2)
 export class User {
+  @Field({ primary: true })
+  id!: string;
   @Field()
-  id: string;
+  firstName!: string;
   @Field()
-  firstName: string;
+  lastName!: string;
   @Field()
-  lastName: string;
-  @Field()
-  age: number;
-  @Field()
-  acceptedTerms = false;
-  @Field()
-  role = "user";
+  age!: number;
+  @Field({ default: defaultAcceptedTerms })
+  acceptedTerms!: boolean;
+  @Field({ default: defaultRole })
+  role!: string;
 
   @EmbedsOne()
   address?: Address;
@@ -25,7 +39,7 @@ export class User {
   readonly hobbies: Hobby[] = [];
 
   // versioning
-  vsn = 0;
+  version = 0;
   snapshotVsn = 0;
 
   @Apply(UserCreated)
@@ -36,8 +50,11 @@ export class User {
     this.age = event.age;
     this.acceptedTerms = event.acceptedTerms;
     this.role = event.role;
-    this.address = event.address;
-    this.vsn++;
+    this.address = new Address();
+    this.address.addressLine = event.address.addressLine;
+    this.address.postalCode = event.address.postalCode;
+    this.address.city = event.address.city;
+    this.version++;
   }
 
   @Apply(UserAddressChanged)
@@ -46,6 +63,59 @@ export class User {
     this.address.addressLine = event.addressLine;
     this.address.postalCode = event.postalCode;
     this.address.city = event.city;
-    this.vsn++;
+    this.version++;
   }
 }
+
+export const userSchemaInfo: SchemaInfo<User> = {
+  fields: [
+    {
+      name: "id",
+      type: String,
+      primary: true,
+      unique: false,
+      allowNull: false,
+      default: undefined,
+    },
+    {
+      name: "firstName",
+      type: String,
+      primary: false,
+      unique: false,
+      allowNull: false,
+      default: undefined,
+    },
+    {
+      name: "lastName",
+      type: String,
+      primary: false,
+      unique: false,
+      allowNull: false,
+      default: undefined,
+    },
+    {
+      name: "age",
+      type: Number,
+      primary: false,
+      unique: false,
+      allowNull: false,
+      default: undefined,
+    },
+    {
+      name: "acceptedTerms",
+      type: Boolean,
+      primary: false,
+      unique: false,
+      allowNull: false,
+      default: defaultAcceptedTerms,
+    },
+    {
+      name: "role",
+      type: String,
+      primary: false,
+      unique: false,
+      allowNull: false,
+      default: defaultRole,
+    },
+  ],
+};

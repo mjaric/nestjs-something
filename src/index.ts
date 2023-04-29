@@ -8,12 +8,12 @@ export {
   EmbedsManyOpts,
   EmbedsOneOpts,
   FieldMetadata,
-  getAggregateSchema,
-  toCamelcase,
+  getSchemaInfo,
   getReferenceKey,
-} from "./decorators";
+} from "./schema/decorators";
 export { AggregatesModule } from "./aggregates.module";
-export { Schema } from "./schema";
+export { SchemaInfo, FieldInfo } from "./schema";
 export { change } from "./changeset";
 export { cast } from "./changeset/changeset";
 export { Changeset } from "./changeset/changeset";
+export { toCamelCase } from "./helpers";

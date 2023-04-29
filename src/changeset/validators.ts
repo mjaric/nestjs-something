@@ -1,7 +1,8 @@
 import { Observable } from "rxjs";
 import { Changeset, Model, Params } from "./changeset";
 import { map } from "rxjs/operators";
-import { pluralize } from "../helpers";
+import { asPlural, pluralize } from "../helpers";
+import { ValidationError } from "@nestjs/common";
 
 export enum Validator {
   required = "required",
@@ -17,12 +18,12 @@ export enum Validator {
 
 export type Error =
   | { validator: Validator.required; message: string }
-  | ({ validator: Validator.number } & ValidateNumberOpts)
+  | ({ validator: Validator.number; message: string } & ValidateNumberOpts)
   | { validator: Validator.length; message: string; min?: number; max?: number }
   | { validator: Validator.format; message: string }
   | { validator: Validator.inclusion; message: string; in: Array<unknown> }
   | { validator: Validator.exclusion; message: string; notIn: Array<unknown> }
-  | { validator: Validator.confirm; message: string; confirm: string }
+  | { validator: Validator.confirm; message: string; confirm: any }
   | { validator: Validator.subset; message: string }
   | { validator: Validator.acceptance; message: string; truthy: Array<unknown> }
   // everything below is not implemented yet, left for extensions
@@ -72,7 +73,7 @@ export type ValidateNumberOpts = {
   lt?: number;
   lte?: number;
   eq?: number;
-  message?: string;
+  message: string;
 };
 
 /**
@@ -96,9 +97,9 @@ export type ValidateNumberOpts = {
  */
 export function validateNumber<M extends Model<M>, P extends Params<P>>(
   field: keyof P,
-  opts?: ValidateNumberOpts,
+  opts?: Partial<ValidateNumberOpts>,
 ) {
-  const validOpts = [opts.gte, opts.gt, opts.lte, opts.lt, opts.eq].some(
+  const validOpts = [opts?.gte, opts?.gt, opts?.lte, opts?.lt, opts?.eq].some(
     (value) => undefined !== value,
   );
   if (!validOpts) {
@@ -106,18 +107,18 @@ export function validateNumber<M extends Model<M>, P extends Params<P>>(
       "validateNumber: at least one of `gt`, `gte`, `lt`, `lte` or `eq` must be configured",
     );
   }
-  if (opts.gt !== undefined && opts.gte !== undefined) {
+  if (opts?.gt !== undefined && opts.gte !== undefined) {
     throw new Error(
       "validateNumber: `gt` and `gte` can't be configured together",
     );
   }
-  if (opts.lt !== undefined && opts.lte !== undefined) {
+  if (opts?.lt !== undefined && opts.lte !== undefined) {
     throw new Error(
       "validateNumber: `lt` and `lte` can't be configured together",
     );
   }
   if (
-    opts.eq !== undefined &&
+    opts?.eq !== undefined &&
     (opts.gt !== undefined ||
       opts.gte !== undefined ||
       opts.lt !== undefined ||
@@ -127,20 +128,20 @@ export function validateNumber<M extends Model<M>, P extends Params<P>>(
       "validateNumber: `eq` can't be configured with `gt`, `gte`, `lt` or `lte`",
     );
   }
-  if (opts.gt !== undefined && opts.lt !== undefined && opts.gt >= opts.lt) {
+  if (opts?.gt !== undefined && opts.lt !== undefined && opts.gt >= opts.lt) {
     throw new Error("validateNumber: `gt` must be lower than `lt`");
   }
   if (
-    opts.gte !== undefined &&
+    opts?.gte !== undefined &&
     opts.lte !== undefined &&
     opts.gte >= opts.lte
   ) {
     throw new Error("validateNumber: `gte` must be lower than `lte`");
   }
-  if (opts.gt !== undefined && opts.lte !== undefined && opts.gt >= opts.lte) {
+  if (opts?.gt !== undefined && opts.lte !== undefined && opts.gt >= opts.lte) {
     throw new Error("validateNumber: `gt` must be lower than `lte`");
   }
-  if (opts.gte !== undefined && opts.lt !== undefined && opts.gte >= opts.lt) {
+  if (opts?.gte !== undefined && opts.lt !== undefined && opts.gte >= opts.lt) {
     throw new Error("validateNumber: `gte` must be lower than `lt`");
   }
   return (source: Observable<Changeset<M, P>>): Observable<Changeset<M, P>> => {
@@ -171,7 +172,7 @@ export function validateNumber<M extends Model<M>, P extends Params<P>>(
           errors[field] = [{ validator, ...opts, message }];
           return { data, changes, errors, params };
         }
-        const innerErrors = [];
+        const innerErrors: Error[] = [];
         // if we check for gt, gte, lt, lte, then check it and return
         if (opts.lt !== undefined && mustBeNumber >= opts.lt) {
           const message = (opts.message ?? "must be less than ${lt}").replace(
@@ -226,7 +227,7 @@ export function validateLength<M extends Model<M>, P extends Params<P>>(
   if (opts?.min === undefined && opts?.max === undefined) {
     throw new Error("validateLength: at least min or max must be defined");
   }
-  if (opts?.min > opts?.max) {
+  if (opts?.min && opts?.max && opts?.min > opts?.max) {
     throw new Error("validateLength: min must be less than max");
   }
 
@@ -250,7 +251,7 @@ export function validateLength<M extends Model<M>, P extends Params<P>>(
         if (opts.min !== undefined && value.length < opts.min) {
           delete changes[field];
           let element = isArray ? "element" : "character";
-          element = pluralize(element, opts.max);
+          element = pluralize(element, opts.min);
           const message =
             opts?.message ?? `must be at least \${min} ${element}`;
           errors[field] = [
@@ -525,14 +526,14 @@ export function validateExclusion<M extends Model<M>, P extends Params<P>>(
  */
 export function validateConfirm<M extends Model<M>, P extends Params<P>>(
   field: keyof P,
-  opts?: { confirm?: string; message?: string },
+  opts?: { confirm?: keyof P; message?: string },
 ) {
   return (source: Observable<Changeset<M, P>>): Observable<Changeset<M, P>> => {
     return source.pipe(
       map(({ params, data, errors, changes }) => {
         const validator = Validator.confirm;
         const value = changes[field];
-        const confirm = opts?.confirm ?? `${String(field)}Confirm`;
+        const confirm = opts?.confirm ?? (`${String(field)}Confirm` as keyof P);
 
         if (value !== params[confirm]) {
           delete changes[field];

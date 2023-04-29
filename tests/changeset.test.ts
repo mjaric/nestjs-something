@@ -23,18 +23,18 @@ import {
 
 describe("changeset", () => {
   class Address {
-    public addressLine: string;
-    public postCode: string;
-    public city: string;
+    public addressLine!: string;
+    public postCode!: string;
+    public city!: string;
   }
 
   class User {
-    public id: number;
-    public firstName: string;
-    public lastName: string;
-    public email: string;
-    public age: number;
-    public address: Address;
+    public id!: number;
+    public firstName!: string;
+    public lastName!: string;
+    public email!: string;
+    public age!: number;
+    public address!: Address;
   }
 
   let newUser: User;
@@ -510,7 +510,11 @@ describe("changeset", () => {
             validateNumber("someNumber", opts),
           );
         } catch (e) {
-          expect(e.message).toEqual(message);
+          if (e instanceof Error) {
+            expect(e.message).toEqual(message);
+          } else {
+            fail("should throw an error");
+          }
         }
       },
     );

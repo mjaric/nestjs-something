@@ -1,4 +1,6 @@
 import { Type } from "@nestjs/common";
+import { toCamelCase } from "../helpers";
+import { FieldInfo, SchemaInfo } from "./schema";
 
 export type AggregateMetadata = {
   vsn: number;
@@ -10,9 +12,12 @@ export type AggregateMetadata = {
  */
 export function AggregateRoot<A>(vsn = 1) {
   return function (target: Type<A>) {
-    Reflect.defineMetadata(AggregateRoot.META_KEY, { vsn }, target);
+    const metadata = Reflect.getMetadata(AggregateRoot.META_KEY, target) ?? {};
+    metadata.vsn = vsn;
+    Reflect.defineMetadata(AggregateRoot.META_KEY, metadata, target);
   };
 }
+
 AggregateRoot.META_KEY = Symbol("aggregate::aggregateRoot");
 
 /**
@@ -20,33 +25,44 @@ AggregateRoot.META_KEY = Symbol("aggregate::aggregateRoot");
  */
 export type FieldMetadata<T> = {
   type?: () => T;
-  nullable?: boolean;
-  defaultValue?: T | (() => T);
+  allowNull?: boolean;
+  default?: () => T;
   primary?: boolean;
+  unique?: boolean;
 };
 
-export function Field<T>(opts?: FieldMetadata<T>): PropertyDecorator {
-  return function (target: object, propertyKey: string | symbol) {
-    if (!opts?.type) {
-      const type = Reflect.getMetadata("design:type", target, propertyKey);
-      if (type === undefined) {
-        throw new Error(
-          `Cannot deduce type for field \`${propertyKey.toString()}\` on \`${
-            target.constructor.name
-          }\`. ` +
-            `Please specify the type explicitly using @Field({type: ...}) \n` +
-            `If you are using TypeScript, make sure to enable \`emitDecoratorMetadata\` in \`tsconfig.json\` \n` +
-            `See https://www.typescriptlang.org/docs/handbook/decorators.html#metadata for more information.`,
-        );
-      }
-      opts = { ...(opts ?? {}), type };
+export function Field<T>(opts?: FieldMetadata<any>): PropertyDecorator {
+  return function (target: object, propertyKey: symbol | string) {
+    const type = opts?.type
+      ? opts.type
+      : Reflect.getMetadata("design:type", target, String(propertyKey));
+    if (type === undefined) {
+      throw new Error(
+        `Cannot deduce type for field \`${propertyKey.toString()}\` on \`${
+          target.constructor.name
+        }\`. ` +
+          `Please specify the type explicitly using @Field({type: ...}) \n` +
+          `If you are using TypeScript, make sure to enable \`emitDecoratorMetadata\` in \`tsconfig.json\` \n` +
+          `See https://www.typescriptlang.org/docs/handbook/decorators.html#metadata for more information.`,
+      );
     }
-    Reflect.defineMetadata(
-      Field.META_KEY,
-      opts,
-      target.constructor,
-      propertyKey,
-    );
+
+    const fieldInfo: FieldInfo<T> = {
+      name: propertyKey as keyof T,
+      type,
+      allowNull: opts?.allowNull ?? false,
+      default: opts?.default,
+      primary: opts?.primary ?? false,
+      unique: opts?.unique ?? false,
+    };
+    setFieldInfo(target.constructor as Type<T>, propertyKey, fieldInfo);
+    const { fields } = getSchemaInfo<T>(target.constructor as Type<T>) ?? {
+      fields: [],
+    };
+    fields.push(fieldInfo);
+    setSchemaInfo(target.constructor as Type<T>, {
+      fields,
+    });
   };
 }
 
@@ -54,8 +70,6 @@ Field.META_KEY = Symbol("aggregate::field");
 
 export type EmbedsOneOpts<T> = {
   type?: Type<T>;
-  nullable?: boolean;
-  foreignKey?: (other: T) => T[keyof T];
 };
 
 export function EmbedsOne<T>(opts?: EmbedsOneOpts<T>): PropertyDecorator {
@@ -72,10 +86,6 @@ export function EmbedsOne<T>(opts?: EmbedsOneOpts<T>): PropertyDecorator {
         );
       }
       opts.type = type;
-    }
-    if (!opts.foreignKey) {
-      opts.foreignKey = (other: T) =>
-        other[getReferenceKey(target.constructor.name)];
     }
     Reflect.defineMetadata(
       EmbedsOne.META_KEY,
@@ -94,14 +104,19 @@ export type EmbedsManyOpts<T> = {
 };
 
 export function EmbedsMany<T>(opts?: EmbedsManyOpts<T>): PropertyDecorator {
-  return function (target: T, propertyKey: string | symbol) {
+  return function (target: object, propertyKey: string | symbol) {
     opts = opts ?? {};
     if (!opts.type) {
-      opts.type = Reflect.getMetadata("design:type", target, propertyKey);
-    }
-    if (!opts.foreignKey) {
-      opts.foreignKey = (other: T) =>
-        other[getReferenceKey(target.constructor.name)];
+      const type = Reflect.getMetadata("design:type", target, propertyKey);
+      if (type === undefined) {
+        throw new Error(
+          `Cannot deduce type for field \`${propertyKey.toString()}\` on \`${
+            target.constructor.name
+          }\`. ` +
+            `Please specify the type explicitly using @EmbedsMany({type: ...})`,
+        );
+      }
+      opts.type = type;
     }
     Reflect.defineMetadata(
       EmbedsMany.META_KEY,
@@ -109,16 +124,6 @@ export function EmbedsMany<T>(opts?: EmbedsManyOpts<T>): PropertyDecorator {
       target.constructor,
       propertyKey,
     );
-    // todo: not sure if this is needed, since this is reference, not a value
-    //       still, it might be useful to have this information in the schema
-    //       so that we can use it in validation such as `validate_length`
-    //       if this is not needed, then we can remove this
-    // also define field for this property
-    // Reflect.defineMetadata('aggregate::field', {
-    //     type: Array,
-    //     nullable: false,
-    //     defaultValue: () => [],
-    // }, target, propertyKey);
   };
 }
 
@@ -126,39 +131,41 @@ EmbedsMany.META_KEY = Symbol("aggregate::embedsMany");
 
 // helper function that can conclude what should be field name of foreign key from given target type
 export function getReferenceKey(constructorName: string): string {
-  return `${toCamelcase(constructorName)}Id`;
+  return `${toCamelCase(constructorName)}Id`;
 }
 
-export function toCamelcase(str: string): string {
-  return str
-    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) => {
-      return index === 0 ? word.toLowerCase() : word.toUpperCase();
-    })
-    .replace(/\s+/g, "");
-}
+const SCHEMA_INFO_KEY = Symbol("aggregate::schemaInfo");
 
 // helped function that can get schema for given aggregate
-export function getAggregateSchema<T extends Type<T>>(
-  target: T,
-): Map<string, FieldMetadata<T[keyof T]>> {
-  const fields = Reflect.getMetadata(Field.META_KEY, target) as Map<
-    string,
-    FieldMetadata<T[keyof T]>
-  >;
-  const embedsOne = Reflect.getMetadata(EmbedsOne.META_KEY, target) as Map<
-    string,
-    EmbedsOneOpts<T[keyof T]>
-  >;
-  const embedsMany = Reflect.getMetadata(EmbedsMany.META_KEY, target) as Map<
-    string,
-    EmbedsManyOpts<T[keyof T]>
-  >;
+export function getSchemaInfo<T>(target: Type<T>): SchemaInfo<T> {
+  const schemaInfo = Reflect.getMetadata(
+    SCHEMA_INFO_KEY,
+    target,
+  ) as SchemaInfo<T>;
+  return schemaInfo;
+}
 
-  return {
-    ...fields,
-    ...embedsOne,
-    ...embedsMany,
-  };
+function setSchemaInfo<T>(target: Type<T>, schemaInfo: SchemaInfo<T>) {
+  Reflect.defineMetadata(SCHEMA_INFO_KEY, schemaInfo, target);
+}
+
+export function getFieldInfo<T, K extends keyof T>(
+  target: Type<T>,
+  propertyKey: K,
+): FieldInfo<T> {
+  return Reflect.getMetadata(
+    Field.META_KEY,
+    target,
+    propertyKey as string | symbol,
+  ) as FieldInfo<T>;
+}
+
+function setFieldInfo<T>(
+  target: Type<T>,
+  propertyKey: string | symbol,
+  fieldInfo: FieldInfo<T>,
+) {
+  Reflect.defineMetadata(Field.META_KEY, fieldInfo, target, propertyKey);
 }
 
 export function getEmbedsOneFor<T extends Type<T>, K extends keyof T>(
