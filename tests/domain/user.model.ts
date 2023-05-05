@@ -4,7 +4,7 @@ import {
   EmbedsOne,
   Field,
   SchemaInfo,
-} from "../../src";
+} from "../../src/schema";
 import { Address } from "./address.model";
 import { Hobby } from "./hobby.model";
 import { UserAddressChanged, UserCreated } from "./events";

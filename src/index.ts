@@ -1,19 +1,17 @@
 import "reflect-metadata";
-
-export {
-  AggregateRoot,
-  EmbedsMany,
-  EmbedsOne,
-  Field,
-  EmbedsManyOpts,
-  EmbedsOneOpts,
-  FieldMetadata,
-  getSchemaInfo,
-  getReferenceKey,
-} from "./schema/decorators";
+// schema/index.ts
+/**
+ * @module schema
+ */
+export * as schema from "./schema";
 export { AggregatesModule } from "./aggregates.module";
-export { SchemaInfo, FieldInfo } from "./schema";
-export { change } from "./changeset";
-export { cast } from "./changeset/changeset";
-export { Changeset } from "./changeset/changeset";
-export { toCamelCase } from "./helpers";
+// changeset/index.ts
+/**
+ * @module changeset
+ */
+export * as changeset from "./changeset";
+// helpers.ts
+/**
+ * @module helpers
+ */
+export * as helpers from "./helpers";

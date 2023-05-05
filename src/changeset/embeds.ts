@@ -1,16 +1,22 @@
 import { Changeset, Model } from "./changeset";
 
 export type EmbedChangeAction = "create" | "update" | "delete";
-type CastEmbedNested<M, PI, PR> = (
-  changeset: Changeset<M>,
-  parmas: PI,
-) => Changeset<M>;
 
-export type CastEmbedFn<M extends Model<M>, P, PKey> = PKey extends "."
-  ? CastEmbedNested<M, P, P>
-  : PKey extends keyof P
-  ? CastEmbedNested<M, P[PKey], P[PKey]>
-  : never;
+export type CastEmbedFn<M extends Model<M>, P> = {
+  /**
+   * Signature of function that should handle the cast to embedded model/aggregate.
+   * @param c Changeset instance
+   * @param p Parameter from field with the given name on parent changeset parmas.
+   */
+  [key in keyof P]: (c: Changeset<M>, p: P[key]) => Changeset<M, P[key]>;
+} & {
+  /**
+   * Signature of function that should handle the cast to embedded model/aggregate.
+   * @param c Changeset instance
+   * @param p Parameter of the parent changeset
+   */
+  ["."]: (c: Changeset<M>, p: P) => Changeset<M, P>;
+};
 
 export type CastOptions = {
   force?: boolean;

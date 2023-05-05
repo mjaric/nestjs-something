@@ -5,15 +5,29 @@
     "removeComments": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "target": "es6",
+    "target": "es2018",
+    "lib": [
+      "es2018"
+    ],
     "sourceMap": true,
     "strict": true,
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true
   },
+  "include": [
+    "src/**/*.ts"
+  ],
   "exclude": [
     "node_modules",
     "dist"
-  ]
+  ],
+  "typedocOptions": {
+    "name": "NestJS Aggregates Docs",
+    "plugin": ["typedoc-plugin-versions"],
+    "entryPoints": ["src/index.ts"],
+    "out": "docs"
+  }
 }

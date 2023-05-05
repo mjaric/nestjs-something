@@ -1,4 +1,4 @@
-import { Field } from "../../src";
+import { Field } from "../../src/schema";
 
 export class Hobby {
   @Field({ primary: true })

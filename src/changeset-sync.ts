@@ -1,3 +1,4 @@
+/*
 export abstract class Change<K> {
   protected constructor(public readonly fieldName: K) {}
 }
@@ -239,3 +240,4 @@ export class ChangesetSync<M extends Model<M>, P extends Params<P> = unknown> {
     return undefined;
   }
 }
+*/

@@ -1,7 +1,7 @@
 import { describe } from "node:test";
-import { AggregateRoot, getSchemaInfo } from "../src";
-import { Hobby } from "./domain/hobby.model";
-import { Address } from "./domain/address.model";
+import { getAggregateRootInfo, getSchemaInfo } from "../src/schema";
+import { Hobby } from "./domain";
+import { Address } from "./domain";
 import { User, userSchemaInfo } from "./domain/user.model";
 import { getFieldInfo } from "../src/schema";
 
@@ -11,15 +11,12 @@ describe("Decorators", () => {
   });
   describe("AggregateRoot", () => {
     it("should register aggregate roots", () => {
-      expect(Reflect.getMetadata(AggregateRoot.META_KEY, User)).toStrictEqual({
+      expect(getAggregateRootInfo(User)).toStrictEqual({
         vsn: 2,
+        ...userSchemaInfo,
       });
-      expect(
-        Reflect.getMetadata(AggregateRoot.META_KEY, Address),
-      ).toBeUndefined();
-      expect(
-        Reflect.getMetadata(AggregateRoot.META_KEY, Hobby),
-      ).toBeUndefined();
+      expect(getAggregateRootInfo(Address)).toBeUndefined();
+      expect(getAggregateRootInfo(Hobby)).toBeUndefined();
     });
   });
 

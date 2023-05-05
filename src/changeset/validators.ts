@@ -149,7 +149,7 @@ export function validateNumber<M extends Model<M>, P extends Params<P>>(
       map(({ data, changes, errors, params }) => {
         opts = opts ?? { message: "is not a number" };
         const validator = Validator.number;
-        const value = changes[field];
+        const value = params[field];
         if (value === undefined || value === null || value === "") {
           return { changes, errors, params, data };
         }
@@ -235,7 +235,7 @@ export function validateLength<M extends Model<M>, P extends Params<P>>(
     return source.pipe(
       map(({ params, data, errors, changes }) => {
         const validator = Validator.length;
-        const value = changes[field] as string | Array<unknown>;
+        const value = params[field] as string | Array<unknown>;
         if (value === undefined || value === null || value === "") {
           return { params, data, errors, changes };
         }
@@ -313,7 +313,7 @@ export function validateFormat<M extends Model<M>, P extends Params<P>>(
         const validator = Validator.format;
         const fields = !Array.isArray(field) ? [field] : field;
         return fields.reduce(({ params, data, errors, changes }, f) => {
-          const value = changes[f];
+          const value = params[f];
           if (value === undefined || value === null || value === "") {
             return { params, data, errors, changes };
           }
@@ -463,7 +463,7 @@ export function validateInclusion<M extends Model<M>, P extends Params<P>>(
     return source.pipe(
       map(({ params, data, errors, changes }) => {
         const validator = Validator.inclusion;
-        const value = changes[field];
+        const value = params[field];
 
         if (!opts.in.includes(value)) {
           delete changes[field];
@@ -498,7 +498,7 @@ export function validateExclusion<M extends Model<M>, P extends Params<P>>(
     return source.pipe(
       map(({ params, data, errors, changes }) => {
         const validator = Validator.exclusion;
-        const value = changes[field];
+        const value = params[field];
 
         if (opts.notIn.includes(value)) {
           delete changes[field];
@@ -532,7 +532,7 @@ export function validateConfirm<M extends Model<M>, P extends Params<P>>(
     return source.pipe(
       map(({ params, data, errors, changes }) => {
         const validator = Validator.confirm;
-        const value = changes[field];
+        const value = params[field];
         const confirm = opts?.confirm ?? (`${String(field)}Confirm` as keyof P);
 
         if (value !== params[confirm]) {
@@ -560,7 +560,7 @@ export function validateAcceptance<M extends Model<M>, P extends Params<P>>(
     return source.pipe(
       map(({ params, data, errors, changes }) => {
         const validator = Validator.acceptance;
-        const value = changes[field];
+        const value = params[field];
         const truthy = opts?.truthy ?? [true, "true", 1, "1"];
 
         if (truthy.includes(value) === false) {

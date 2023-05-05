@@ -1,4 +1,4 @@
-import { Field } from "../../src";
+import { Field } from "../../src/schema";
 import { v4 } from "uuid";
 
 export class Address {
